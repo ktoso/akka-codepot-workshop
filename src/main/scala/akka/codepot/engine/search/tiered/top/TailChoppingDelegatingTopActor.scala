@@ -12,7 +12,7 @@ class TailChoppingDelegatingTopActor(prefix: Char) extends Actor {
   import scala.concurrent.duration._
 
   val worker = context.actorOf(TailChoppingPool(10, within = 1.second, interval = 100.millis)
-    .props(RandomlySlowMiddleActor.props(prefix, slowness = 200.millis, chance = 50 /* % */)))
+    .props(RandomlySlowMiddleActor.props(prefix, slowness = 200.millis, chance = 25 /* % */)))
 
   override def receive: Receive = {
     case any => worker forward any

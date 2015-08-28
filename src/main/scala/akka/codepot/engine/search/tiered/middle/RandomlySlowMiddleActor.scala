@@ -1,9 +1,10 @@
 package akka.codepot.engine.search.tiered.middle
 
+import java.util.concurrent.ThreadLocalRandom
+
 import akka.actor.{Actor, ActorLogging, Props, Stash}
 import akka.codepot.engine.index.Indexing
 import akka.codepot.engine.search.tiered.TieredSearchProtocol
-import akka.codepot.engine.search.tiered.top.ShardedSimpleFromFileTopActor
 import akka.stream.scaladsl.{ImplicitMaterializer, Sink}
 import akka.util.ByteString
 
@@ -16,18 +17,17 @@ object  RandomlySlowMiddleActor {
    */
   def props(prefix: Char, slowness: FiniteDuration, chance: Int = 50) = {
     require(chance >= 0 && chance <= 100, "chance must be: >= 0 && <= 100")
-    Props(classOf[RandomlySlowMiddleActor], prefix)
+    Props(classOf[RandomlySlowMiddleActor], prefix, slowness, chance)
   }
 }
-
-class RandomlySlowMiddleActor(prefix: Char) extends Actor with ActorLogging
+class RandomlySlowMiddleActor(prefix: Char, slowness: FiniteDuration, chance: Int = 50) extends Actor with ActorLogging
   with Stash
   with ImplicitMaterializer
   with Indexing {
 
-  import ShardedSimpleFromFileTopActor._
   import TieredSearchProtocol._
 
+  val rand = ThreadLocalRandom.current()
   var inMemIndex: immutable.Set[String] = Set.empty
 
   override def preStart() =
@@ -38,8 +38,12 @@ class RandomlySlowMiddleActor(prefix: Char) extends Actor with ActorLogging
   def indexing: Receive = {
     case word: ByteString =>
       inMemIndex += word.utf8String
+      logProgress()
 
     case IndexingCompleted =>
+      val size = inMemIndex.size
+      log.info("Indexing of {} keywords for prefix {} completed!", size, prefix)
+
       unstashAll()
       context.parent ! IndexingCompleted
       context become ready
@@ -47,13 +51,38 @@ class RandomlySlowMiddleActor(prefix: Char) extends Actor with ActorLogging
     case _ => stash()
   }
 
-  def ready: Receive = {
-    case Search(keyword, maxResults) =>
-      sender() ! SearchResults(inMemIndex.find(_ contains keyword).take(maxResults).toList)
+  private def logProgress(): Unit = {
+    val size = inMemIndex.size
+    if (size % 1000 == 0) {
+      log.info("Indexed {} keywords for {} prefix", size, prefix)
+    }
   }
 
-  private def doIndex(char: Char): Unit =
+  def ready: Receive = {
+    case Search(keyword, maxResults) =>
+      actSlow_!!!()
+      val result = searchInMem(keyword, maxResults)
+      // log.info("Search for {}, resulted in {} entries, on shard {}", keyword, result.size, prefix)
+      sender() ! SearchResults(result.toList)
+  }
+
+  private def actSlow_!!!(): Unit = {
+    val n = rand.nextInt(0, 101)
+    if (n < chance) {
+      log.warning("Searching on [{}] is slow ({}, chance:{}<{})!", prefix, slowness, n, chance)
+      Thread.sleep(slowness.toMillis)
+    }
+  }
+
+  def searchInMem(keyword: String, maxResults: Int): Set[String] =
+    inMemIndex.filter(_ contains keyword)
+      .take(maxResults)
+
+  private def doIndex(prefix: Char): Unit = {
+    log.info("Indexing for index {}...", prefix)
     wikipediaCachedKeywordsSource
+      .filter(_.head.toChar == prefix)
       .runWith(Sink.actorRef(self, onCompleteMessage = IndexingCompleted))
+  }
 
 }
