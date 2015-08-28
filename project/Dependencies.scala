@@ -22,6 +22,7 @@ object Dependencies {
     val akkaStreamTestkit    = "com.typesafe.akka" %%"akka-stream-testkit-experimental" % Version.akkaStreams
     val akkaHttpCore         = "com.typesafe.akka" %%"akka-http-core-experimental"      % Version.akkaStreams
     val akkaHttp             = "com.typesafe.akka" %% "akka-http-experimental"          % Version.akkaStreams
+    val akkaTestKit          = "com.typesafe.akka" %% "akka-testkit"                    % Version.akka
     val akkaMultiNodeTestKit = "com.typesafe.akka" %% "akka-multi-node-testkit"         % Version.akka
 
     val akkaHttpSprayJson    = "com.typesafe.akka" %% "akka-http-spray-json-experimental" % Version.akkaStreams
@@ -44,7 +45,7 @@ object Dependencies {
   private val streams = Seq(akkaStream, akkaStreamTestkit)
   private val logging = Seq(akkaSlf4j, logbackClassic)
 
-  val core = Seq(akkaActor) ++ streams ++ testing ++ logging
+  val core = Seq(akkaActor, akkaTestKit) ++ streams ++ testing ++ logging
   val engine = Seq(akkaActor, algebird) ++ cluster ++ testing
   val service = Seq(akkaActor, akkaHttpCore, akkaHttp, akkaHttpSprayJson, akkaHttpXml, akkaHttpTestkit) ++ testing
 

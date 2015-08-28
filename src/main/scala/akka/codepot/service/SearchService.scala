@@ -1,6 +1,7 @@
 package akka.codepot.service
 
 import akka.actor.{ActorRef, ActorSystem}
+import akka.codepot.engine.search.SearchMaster
 import akka.codepot.engine.search.tiered.TieredSearchProtocol.{Results, Search}
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.server.Directives
@@ -18,7 +19,7 @@ trait SearchService extends Directives with ScalaXmlSupport {
   import akka.pattern.ask
   implicit val timeout = Timeout(300.millis)
 
-  val searchMaster: ActorRef = ??? // OR via cluster sharding???
+  val searchMaster: ActorRef = system.actorOf(SearchMaster.props(), "searchMaster")
 
   def searchRoutes =
     pathPrefix("search") {

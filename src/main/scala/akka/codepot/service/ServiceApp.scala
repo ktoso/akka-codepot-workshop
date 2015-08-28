@@ -1,10 +1,10 @@
 package akka.codepot.service
 
 import akka.actor.ActorSystem
-import akka.cluster.Cluster
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 

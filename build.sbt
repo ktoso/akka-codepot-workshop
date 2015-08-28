@@ -37,10 +37,10 @@ lazy val multiJvmSettings = Seq(
   }
 )
 
-lazy val root = project.in(file("service"))
-  .settings(commonSettings: _*)
-  .settings(SbtMultiJvm.multiJvmSettings: _*)
-  .configs(MultiJvm)
-  .settings(
-    libraryDependencies ++= Dependencies.all
-  )
+commonSettings
+
+SbtMultiJvm.multiJvmSettings
+
+configs(MultiJvm)
+
+libraryDependencies ++= Dependencies.all
