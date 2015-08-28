@@ -13,7 +13,7 @@ object BottomTierActor {
 class BottomTierActor extends Actor with Indexing with ImplicitMaterializer {
 
   override def receive: Receive = {
-    case TieredSearchProtocol.Search(key, max) => // TODO extract protocol
+    case TieredSearchProtocol.Search(key, max) =>
       import context.dispatcher
       import akka.pattern.pipe
 

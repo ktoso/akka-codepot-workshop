@@ -49,7 +49,7 @@ class RandomlySlowMiddleActor(prefix: Char) extends Actor with ActorLogging
 
   def ready: Receive = {
     case Search(keyword, maxResults) =>
-      sender() ! Results(inMemIndex.find(_ contains keyword).take(maxResults).toList)
+      sender() ! SearchResults(inMemIndex.find(_ contains keyword).take(maxResults).toList)
   }
 
   private def doIndex(char: Char): Unit =

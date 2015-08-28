@@ -1,14 +1,15 @@
 package akka.codepot.service
 
 import akka.actor.ActorSystem
+import akka.codepot.engine.SearchEngineNotYetInitializedException
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import akka.stream.ActorMaterializer
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-object ServiceApp extends App
+object HttpServiceApp extends App
   with HelloWorldService
   with SearchService {
 
@@ -18,8 +19,18 @@ object ServiceApp extends App
 
   val config = system.settings.config
 
+  val myExceptionHandler = ExceptionHandler {
+    case SearchEngineNotYetInitializedException(msg) =>
+      complete(<html>
+        <body>{msg}</body>
+      </html>)
+  }
+
+
   // our routes:
-  val route: Route = helloRoutes ~ searchRoutes
+  val route: Route = handleExceptions(myExceptionHandler) {
+    helloRoutes ~ searchRoutes
+  }
 
   // start the http server:
   val bindingFuture = Http().bindAndHandle(route, "127.0.0.1", config.getInt("codepot.http.port"))

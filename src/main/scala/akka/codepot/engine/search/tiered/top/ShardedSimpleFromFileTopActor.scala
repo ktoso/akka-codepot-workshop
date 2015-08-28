@@ -13,7 +13,6 @@ object  ShardedSimpleFromFileTopActor {
     Props(classOf[ShardedSimpleFromFileTopActor])
 
   final case class PrepareIndex(char: Char)
-  final case object IndexingCompleted
 }
 class ShardedSimpleFromFileTopActor extends Actor with ActorLogging
   with Stash
@@ -22,7 +21,6 @@ class ShardedSimpleFromFileTopActor extends Actor with ActorLogging
 
   val prefix = self.path.name.head
 
-  import ShardedSimpleFromFileTopActor._
   import TieredSearchProtocol._
 
   var inMemIndex: immutable.Set[String] = Set.empty
@@ -45,7 +43,7 @@ class ShardedSimpleFromFileTopActor extends Actor with ActorLogging
 
   def ready: Receive = {
     case Search(keyword, maxResults) =>
-      sender() ! Results(inMemIndex.find(_ contains keyword).take(maxResults).toList)
+      sender() ! SearchResults(inMemIndex.find(_ contains keyword).take(maxResults).toList)
   }
 
   private def doIndex(char: Char): Unit =

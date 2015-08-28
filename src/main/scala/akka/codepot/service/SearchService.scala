@@ -7,9 +7,10 @@ import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.server.Directives
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
+
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.xml.{NodeSeq, Elem}
+import scala.xml.NodeSeq
 
 trait SearchService extends Directives with ScalaXmlSupport {
   implicit def system: ActorSystem
@@ -17,9 +18,9 @@ trait SearchService extends Directives with ScalaXmlSupport {
   implicit def materializer: ActorMaterializer
 
   import akka.pattern.ask
-  implicit val timeout = Timeout(300.millis)
+  implicit val timeout = Timeout(3.seconds)
 
-  val searchMaster: ActorRef = system.actorOf(SearchMaster.props(), "searchMaster")
+  lazy val searchMaster: ActorRef = system.actorOf(SearchMaster.props(), "searchMaster")
 
   def searchRoutes =
     pathPrefix("search") {
