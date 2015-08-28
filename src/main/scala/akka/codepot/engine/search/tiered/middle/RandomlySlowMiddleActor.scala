@@ -2,25 +2,26 @@ package akka.codepot.engine.search.tiered.middle
 
 import java.util.concurrent.ThreadLocalRandom
 
-import akka.actor.{Actor, ActorLogging, Props, Stash}
+import akka.actor._
 import akka.codepot.engine.index.Indexing
 import akka.codepot.engine.search.tiered.TieredSearchProtocol
 import akka.stream.scaladsl.{ImplicitMaterializer, Sink}
 import akka.util.ByteString
 
 import scala.collection.immutable
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 object  RandomlySlowMiddleActor {
   /**
    * @param chance percent (0 - 100)
    */
-  def props(prefix: Char, slowness: FiniteDuration, chance: Int = 50) = {
+  def props(master: ActorRef, prefix: Char, slowness: FiniteDuration, chance: Int = 50) = {
     require(chance >= 0 && chance <= 100, "chance must be: >= 0 && <= 100")
-    Props(classOf[RandomlySlowMiddleActor], prefix, slowness, chance)
+    Props(classOf[RandomlySlowMiddleActor], master, prefix, slowness, chance)
   }
 }
-class RandomlySlowMiddleActor(prefix: Char, slowness: FiniteDuration, chance: Int = 50) extends Actor with ActorLogging
+class RandomlySlowMiddleActor(master: ActorRef, prefix: Char, slowness: FiniteDuration, chance: Int = 50) extends Actor with ActorLogging
   with Stash
   with ImplicitMaterializer
   with Indexing {
@@ -45,7 +46,7 @@ class RandomlySlowMiddleActor(prefix: Char, slowness: FiniteDuration, chance: In
       log.info("Indexing of {} keywords for prefix {} completed!", size, prefix)
 
       unstashAll()
-      context.parent ! IndexingCompleted
+      master ! IndexingCompleted
       context become ready
 
     case _ => stash()
@@ -60,18 +61,21 @@ class RandomlySlowMiddleActor(prefix: Char, slowness: FiniteDuration, chance: In
 
   def ready: Receive = {
     case Search(keyword, maxResults) =>
-      actSlow_!!!()
-      val result = searchInMem(keyword, maxResults)
-      // log.info("Search for {}, resulted in {} entries, on shard {}", keyword, result.size, prefix)
-      sender() ! SearchResults(result.toList)
+      actSlow_!!! {
+        val result = searchInMem(keyword, maxResults)
+        // log.info("Search for {}, resulted in {} entries, on shard {}", keyword, result.size, prefix)
+        sender() ! SearchResults(result.toList)
+      }
   }
 
-  private def actSlow_!!!(): Unit = {
+  private def actSlow_!!!(call: => Unit): Unit = {
+    import context.dispatcher
     val n = rand.nextInt(0, 101)
     if (n < chance) {
-      log.warning("Searching on [{}] is slow ({}, chance:{}<{})!", prefix, slowness, n, chance)
-      Thread.sleep(slowness.toMillis)
-    }
+      akka.pattern.after(slowness, context.system.scheduler)(Future.successful("")).map { _ =>
+        call
+      }
+    } else call
   }
 
   def searchInMem(keyword: String, maxResults: Int): Set[String] =
