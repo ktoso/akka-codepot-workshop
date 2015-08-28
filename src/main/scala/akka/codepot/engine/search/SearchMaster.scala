@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, Props}
 import akka.codepot.engine.SearchEngineNotYetInitializedException
 import akka.codepot.engine.index.Indexing
 import akka.codepot.engine.search.tiered.TieredSearchProtocol._
-import akka.codepot.engine.search.tiered.top.{TailChoppingDelegatingTopActor, ToSlowDelegatingTopActor}
+import akka.codepot.engine.search.tiered.top.BestEffortDelegatingTopActor
 import akka.stream.scaladsl.ImplicitMaterializer
 import akka.util.Timeout
 
@@ -26,7 +26,8 @@ class SearchMaster extends Actor with ImplicitMaterializer with ActorLogging
   val shards = 'A' to 'Z'
   val workers = shards foreach { l =>
 //    context.actorOf(ToSlowDelegatingTopActor.props(l), s"$l")
-    context.actorOf(TailChoppingDelegatingTopActor.props(l), s"$l")
+//    context.actorOf(TailChoppingDelegatingTopActor.props(l), s"$l")
+    context.actorOf(BestEffortDelegatingTopActor.props(l, 100.millis), s"$l")
   }
 
   override def receive: Receive = initializingWorkers(shards.size)

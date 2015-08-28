@@ -63,7 +63,7 @@ class RandomlySlowMiddleActor(master: ActorRef, prefix: Char, slowness: FiniteDu
     case Search(keyword, maxResults) =>
       actSlow_!!! {
         val result = searchInMem(keyword, maxResults)
-        // log.info("Search for {}, resulted in {} entries, on shard {}", keyword, result.size, prefix)
+//         log.info("Search for {}, resulted in {} entries, on shard {}", keyword, result.size, prefix)
         sender() ! SearchResults(result.toList)
       }
   }
