@@ -21,7 +21,7 @@ object IndexerApp extends App with Indexing {
 
     val c = new AtomicInteger()
 
-  rawWikipediaSource
+  wikipediaParsedKeywordsSource
     .runWith(Sink.synchronousFile(new File("keywords.csv")))
     .onComplete(_ => system.terminate())
 

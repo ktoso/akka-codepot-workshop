@@ -8,14 +8,19 @@ import akka.stream.scaladsl.ImplicitMaterializer
 object BottomTierActor {
   def props(prefix: Char) =
     Props(classOf[BottomTierActor])
-
 }
 
 class BottomTierActor extends Actor with Indexing with ImplicitMaterializer {
-  import TieredSearchProtocol._
 
   override def receive: Receive = {
-    case ScanFor(key, max) => // TODO extract protocol
+    case TieredSearchProtocol.Search(key, max) => // TODO extract protocol
+      import context.dispatcher
+      import akka.pattern.pipe
 
+      wikipediaCachedKeywordsSource
+        .filter(_.utf8String contains key)
+        .take(max)
+        .runFold(List.empty[String])((acc, bs) => bs.toString() :: acc)
+        .pipeTo(sender())
   }
 }

@@ -41,7 +41,7 @@ class LRUCachingActor(target: ActorRef, keepDuration: FiniteDuration, _timeout: 
 
         if (holder.deadline.isOverdue()) {
           removeFromCache(msg)
-          askDownstream()
+          askDownstream(msg)
         } else {
           markHot(holder)
           sender() ! holder.it

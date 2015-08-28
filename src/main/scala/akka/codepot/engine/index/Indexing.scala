@@ -10,7 +10,7 @@ import akka.stream.scaladsl.Source
 import akka.stream.{ActorAttributes, Supervision}
 import akka.util.ByteString
 import spray.json.JsObject
-
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 trait Indexing {
