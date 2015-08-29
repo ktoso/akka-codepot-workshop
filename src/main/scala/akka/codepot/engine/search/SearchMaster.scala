@@ -4,11 +4,10 @@ import akka.actor.{Actor, ActorLogging, Props}
 import akka.codepot.engine.SearchEngineNotYetInitializedException
 import akka.codepot.engine.index.Indexing
 import akka.codepot.engine.search.tiered.TieredSearchProtocol._
-import akka.codepot.engine.search.tiered.top.ToSlowDelegatingTopActor
+import akka.codepot.engine.search.tiered.top.SimpleIndexedTopActor
 import akka.stream.scaladsl.ImplicitMaterializer
 import akka.util.Timeout
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
 
 object SearchMaster {
@@ -18,14 +17,12 @@ object SearchMaster {
 
 class SearchMaster extends Actor with ImplicitMaterializer with ActorLogging
   with Indexing {
-
-  import akka.pattern.{ask, pipe}
-  import context.dispatcher
   implicit val timeout = Timeout(200.millis)
 
+  // TODO we're creating workers here, for each letter
   val shards = 'A' to 'Z'
   val workers = shards foreach { l =>
-    context.actorOf(ToSlowDelegatingTopActor.props(l), s"$l")
+    context.actorOf(SimpleIndexedTopActor.props(l), s"$l")
   }
 
   override def receive: Receive = initializingWorkers(shards.size)
@@ -44,31 +41,18 @@ class SearchMaster extends Actor with ImplicitMaterializer with ActorLogging
   def initialized: Receive = {
     case search @ Search(key, max) =>
 
+      // TODO ask all downstreams
+      // TODO NOT fail when one of them failed
+      // TODO pipeTo sender() after all data collected
       // FUTURES, waits for all...
       val allResults =
         context.children
-          .map(c => (c ? search).mapTo[Results])
-          .toList
 
-      val combined =
-        Future.sequence(allResults.map(_.recover { case _ => SearchResults(Nil) }))
-        .map(seq => SearchResults(seq.flatMap(_.strict)))
+      ???
 
-      combined.pipeTo(sender())
-
-//    STREAMS, waits for `max`
-//      val combined =
-//        Source(context.children)
-//        .mapAsyncUnordered(context.children.size) { worker =>
-//          val start = System.currentTimeMillis()
-//          (worker ? search)
-//            .mapTo[Results]
-//            .recover { case _ => SearchResults(Nil) }
-//        }
-//      .mapConcat(i => i.strict)
-//      .runFold(List.empty[String])((acc, el) => el :: acc)
-//
-//      combined.map(SearchResults(_)).pipeTo(sender())
+      // TODO how long are you waiting?
+      // TODO could you wait less?
+      // TODO how?
   }
 
 }

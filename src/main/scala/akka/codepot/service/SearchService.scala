@@ -17,31 +17,19 @@ trait SearchService extends Directives with ScalaXmlSupport {
   implicit def dispatcher = system.dispatcher
   implicit def materializer: ActorMaterializer
 
+  // TODO explain ask pattern
   import akka.pattern.ask
   implicit val timeout = Timeout(3.seconds)
 
+  // TODO what is this search master?
   lazy val searchMaster: ActorRef = system.actorOf(SearchMaster.props(), "searchMaster")
 
   def searchRoutes =
-    pathPrefix("search") {
-      get {
-        parameters('q, 'n ? 100) { (q, max) =>
-          complete { search(q, max) }
-        }
-      } ~
-      complete {
-        <div>
-          <h1>Say hello to akka-http</h1>
-          <form action="/search">
-            <input name="q"></input>
-            <button value="Search!"/>
-          </form>
-        </div>
-      }
-    }
+    // TODO "search" GET with params 'q and n, which is an Int, complete it with a search
+      ???
 
   def search(q: String, max: Int): Future[NodeSeq] =
-    (searchMaster ? Search(q, 100)).mapTo[Results].map(searchResultPage)
+    ??? // TODO ask the SearchMaster to search for q, max 100 entries
 
   private def searchResultPage(results: Results): NodeSeq = {
     <ul>
