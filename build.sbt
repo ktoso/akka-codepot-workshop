@@ -44,3 +44,6 @@ SbtMultiJvm.multiJvmSettings
 configs(MultiJvm)
 
 libraryDependencies ++= Dependencies.all
+
+
+fork in run := true

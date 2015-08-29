@@ -9,3 +9,6 @@ project/target
 .idea
 .idea_modules
 hs_err*
+project/.sbtserver
+project/.sbtserver.lock
+project/sbt-ui.sbt
