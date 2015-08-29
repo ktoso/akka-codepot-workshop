@@ -3,6 +3,7 @@ akka-codepot-workshop
 codepot workshop combining Akka Cluster with streaming and various patterns.
 
 TODO:
+- [ ] project outline, projects, goal of workshop
 - [ ] akka-http and ask into worker which scans entire thing
 - [ ] akka-http and ask into worker with separate dispatcher
 - [ ] akka-http and ask into master, who has workers (remote)
@@ -15,8 +16,11 @@ TODO:
 - [ ] remembered entries
 - [ ] recovery of cache from journal - make them PersistentActors
 - [ ] return JSON
-- [ ] return streaming JSON 
+- [ ] return streaming JSON
+- [ ] circuit breakers?
 - [ ] akka-http and ask into cluster sharding, with LRU cache (compose actors)
+
+~~ Konrad `ktoso` Malawski – 2015 @ Codepot, Warsaw
 
 License
 =======
