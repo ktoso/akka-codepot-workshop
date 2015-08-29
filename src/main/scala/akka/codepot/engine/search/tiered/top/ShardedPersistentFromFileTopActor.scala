@@ -5,7 +5,7 @@ import java.util.Locale
 import akka.actor.{ActorLogging, Props, Stash}
 import akka.codepot.engine.index.Indexing
 import akka.codepot.engine.search.tiered.TieredSearchProtocol
-import akka.persistence.{SnapshotOffer, PersistentActor}
+import akka.persistence.{PersistentActor, SnapshotOffer}
 import akka.stream.scaladsl.{ImplicitMaterializer, Sink}
 import akka.util.ByteString
 
@@ -36,19 +36,24 @@ class ShardedPersistentFromFileTopActor extends PersistentActor with ActorLoggin
     doIndex(key)
   }
 
-  override def receiveRecover: Receive = indexing("recovering") orElse ({
+  override def receiveRecover: Receive = {
+    case s: String =>
+      log.info("Recovering {}", s)
+      inMemIndex += s
+
     case SnapshotOffer(meta, index: Set[String]) =>
       log.info("Recovered using snapshot.")
       inMemIndex = index
-  }: Receive)
+  }
 
   override def receiveCommand: Receive = indexing("indexing")
 
   def indexing(action: String): Receive = {
-    case word: String =>
-      persist(word) { inMemIndex += _ }
     case word: ByteString =>
-      persist(word.toString()) { inMemIndex += _ }
+      persist(word.toString()) { e =>
+        log.info("Persisting event {}", e)
+        inMemIndex += e
+      }
 
     case IndexingCompleted =>
       log.info("Finished {} for key [{}] (entries: {}), snapshotting...", action, key, inMemIndex.size)
