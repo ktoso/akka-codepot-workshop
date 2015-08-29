@@ -34,7 +34,7 @@ class SearchMaster extends Actor with ImplicitMaterializer with ActorLogging
     .start(
       typeName = "search",
       entityProps = ShardedSimpleFromFileTopActor.props(),
-      settings = ClusterShardingSettings(context.system),
+      settings = ClusterShardingSettings(context.system).withRememberEntities(true),
       extractShardId = extractShardId,
       extractEntityId = extractEntityId)
 

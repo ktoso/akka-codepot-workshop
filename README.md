@@ -8,9 +8,11 @@ TODO:
 - [ ] akka-http and ask into master, who has workers (remote)
 - [ ] akka-http and ask into master, who has workers (remote), who fail
 - [ ] akka-http and ask into master, who has workers (remote), who fail, so we use backup-requests
-- [ ] akka-http and ask into cluster sharding
 - [ ] how does this compare with micro services
 - [ ] actSlow_!!! show crappy blocking impl's impact on performance (then separate dispatcher, then `after`)
+- [ ] akka-http and ask into cluster sharding
+- [ ] show cluster sharding how it recovers nodes
+- [ ] remembered entries
 - [ ] recovery of cache from journal - make them PersistentActors
 - [ ] return JSON
 - [ ] return streaming JSON 
