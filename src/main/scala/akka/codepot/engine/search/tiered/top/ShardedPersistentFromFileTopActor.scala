@@ -69,7 +69,8 @@ class ShardedPersistentFromFileTopActor extends PersistentActor with ActorLoggin
 
   private def doIndex(part: String): Unit =
     wikipediaCachedKeywordsSource
-      .filter(_.utf8String.toLowerCase(Locale.ROOT) contains part)
+      .map(_.utf8String)
+      .filter(_.toLowerCase(Locale.ROOT) contains part)
       .runWith(Sink.actorRef(self, onCompleteMessage = IndexingCompleted))
 
 }
