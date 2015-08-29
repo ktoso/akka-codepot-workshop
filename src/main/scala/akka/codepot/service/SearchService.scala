@@ -18,7 +18,7 @@ trait SearchService extends Directives with ScalaXmlSupport {
   implicit def materializer: ActorMaterializer
 
   import akka.pattern.ask
-  implicit val timeout = Timeout(3.seconds)
+  implicit val timeout = Timeout(10.seconds)
 
   lazy val searchMaster: ActorRef = system.actorOf(SearchMaster.props(), "searchMaster")
 
@@ -41,7 +41,7 @@ trait SearchService extends Directives with ScalaXmlSupport {
     }
 
   def search(q: String, max: Int): Future[NodeSeq] =
-    (searchMaster ? Search(q, 100)).mapTo[Results].map(searchResultPage)
+    (searchMaster ? Search(q, max)).mapTo[Results].map(searchResultPage)
 
   private def searchResultPage(results: Results): NodeSeq = {
     <ul>

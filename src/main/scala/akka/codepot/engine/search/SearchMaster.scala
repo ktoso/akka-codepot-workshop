@@ -1,14 +1,16 @@
 package akka.codepot.engine.search
 
+import java.util.Locale
+
 import akka.actor.{Actor, ActorLogging, Props}
-import akka.codepot.engine.SearchEngineNotYetInitializedException
+import akka.cluster.sharding.ShardRegion.{ExtractEntityId, ExtractShardId}
+import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
 import akka.codepot.engine.index.Indexing
 import akka.codepot.engine.search.tiered.TieredSearchProtocol._
-import akka.codepot.engine.search.tiered.top.BestEffortDelegatingTopActor
+import akka.codepot.engine.search.tiered.top.ShardedSimpleFromFileTopActor
 import akka.stream.scaladsl.ImplicitMaterializer
 import akka.util.Timeout
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
 
 object SearchMaster {
@@ -18,59 +20,30 @@ object SearchMaster {
 
 class SearchMaster extends Actor with ImplicitMaterializer with ActorLogging
   with Indexing {
+  implicit val timeout = Timeout(10.seconds)
 
-  import akka.pattern.{ask, pipe}
-  import context.dispatcher
-  implicit val timeout = Timeout(200.millis)
-
-  val shards = 'A' to 'Z'
-  val workers = shards foreach { l =>
-//    context.actorOf(ToSlowDelegatingTopActor.props(l), s"$l")
-//    context.actorOf(TailChoppingDelegatingTopActor.props(l), s"$l")
-    context.actorOf(BestEffortDelegatingTopActor.props(l, 100.millis), s"$l")
+  val extractShardId: ExtractShardId = {
+    case x: Search => x.keyword.toLowerCase(Locale.ROOT).take(1)
   }
 
-  override def receive: Receive = initializingWorkers(shards.size)
+  val extractEntityId: ExtractEntityId = {
+    case x: Search => (x.keyword.toLowerCase(Locale.ROOT).take(2), x)
+  }
 
-  def initializingWorkers(leftToInitialize: Int): Receive =
-    if (leftToInitialize == 0) initialized
-    else {
-      case IndexingCompleted =>
-        context become initializingWorkers(leftToInitialize - 1)
-      case _ =>
-        sender() ! SeachFailed(SearchEngineNotYetInitializedException(
-          "Search engine not yet initialized! " +
-          s"Waiting for $leftToInitialize more workers..."))
-    }
+  val workerShading = ClusterSharding(context.system)
+    .start(
+      typeName = "search",
+      entityProps = ShardedSimpleFromFileTopActor.props(),
+      settings = ClusterShardingSettings(context.system),
+      extractShardId = extractShardId,
+      extractEntityId = extractEntityId)
 
-  def initialized: Receive = {
-    case search @ Search(key, max) =>
+  override def receive: Receive = {
+    case search: Search =>
+      import akka.pattern.{ask, pipe}
+      import context.dispatcher
 
-      // FUTURES, waits for all...
-      val allResults =
-        context.children
-          .map(c => (c ? search).mapTo[Results])
-          .toList
-
-      val combined =
-        Future.sequence(allResults.map(_.recover { case _ => SearchResults(Nil) }))
-        .map(seq => SearchResults(seq.flatMap(_.strict)))
-
-      combined.pipeTo(sender())
-
-//    STREAMS, waits for `max`
-//      val combined =
-//        Source(context.children)
-//        .mapAsyncUnordered(context.children.size) { worker =>
-//          val start = System.currentTimeMillis()
-//          (worker ? search)
-//            .mapTo[Results]
-//            .recover { case _ => SearchResults(Nil) }
-//        }
-//      .mapConcat(i => i.strict)
-//      .runFold(List.empty[String])((acc, el) => el :: acc)
-//
-//      combined.map(SearchResults(_)).pipeTo(sender())
+      (workerShading ? search).pipeTo(sender())
   }
 
 }

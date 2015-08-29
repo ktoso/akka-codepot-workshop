@@ -1,6 +1,7 @@
 package akka.codepot.common
 
 import akka.actor._
+import akka.codepot.persistence.SharedJournalSetter
 
 import scala.collection.breakOut
 import scala.concurrent.Await
@@ -13,8 +14,16 @@ abstract class BaseApp {
   def main(args: Array[String]): Unit = {
     val opts = argsToOpts(args.toList)
     applySystemProperties(opts)
+
     val system = ActorSystem("codepot-system")
+
+    // locate persistence journal:
+    system.actorOf(SharedJournalSetter.props)
+
+    system.actorOf(ClusterListener.props)
+
     run(system, opts)
+
     io.StdIn.readLine("Hit ENTER to quit ...")
     Await.ready(system.terminate(), 3.second)
   }

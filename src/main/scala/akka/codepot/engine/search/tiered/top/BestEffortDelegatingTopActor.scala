@@ -29,12 +29,12 @@ class BestEffortDelegatingTopActor(prefix: Char, sla: FiniteDuration) extends Ac
             replyTo ! res
             context.stop(self)
 
-          case ReceiveTimeout =>
+          case ReceiveTimeout     =>
             log.info("[{}] Did not meet {} SLA, degrading service quality with empty results.", prefix, sla)
             replyTo ! SearchResults(Nil)
             context.stop(self)
         }
-      }))
-      worker.tell(any, sender = slaGuardian)
+    }))
+    worker.tell(any, sender = slaGuardian)
   }
 }

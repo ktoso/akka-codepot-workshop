@@ -1,5 +1,7 @@
 package akka.codepot.engine.search.tiered.top
 
+import java.util.Locale
+
 import akka.actor.{Actor, ActorLogging, Props, Stash}
 import akka.codepot.engine.index.Indexing
 import akka.codepot.engine.search.tiered.TieredSearchProtocol
@@ -19,22 +21,25 @@ class ShardedSimpleFromFileTopActor extends Actor with ActorLogging
   with ImplicitMaterializer
   with Indexing {
 
-  val prefix = self.path.name.head
-
   import TieredSearchProtocol._
+
+  val key = self.path.name
 
   var inMemIndex: immutable.Set[String] = Set.empty
 
-  override def preStart() =
-    doIndex(prefix)
+  override def preStart() = {
+    log.info("Started Entity Actor for key [{}], indexing...", key)
+    doIndex(key)
+  }
 
   override def receive: Receive = indexing
 
   def indexing: Receive = {
-    case word: ByteString =>
-      inMemIndex += word.utf8String
+    case word: String => inMemIndex += word
+    case word: ByteString => inMemIndex += word.utf8String
 
     case IndexingCompleted =>
+      log.info("Finished indexing for key [{}] (entries: {})", key, inMemIndex.size)
       unstashAll()
       context become ready
 
@@ -43,11 +48,15 @@ class ShardedSimpleFromFileTopActor extends Actor with ActorLogging
 
   def ready: Receive = {
     case Search(keyword, maxResults) =>
-      sender() ! SearchResults(inMemIndex.find(_ contains keyword).take(maxResults).toList)
+      val results = inMemIndex
+        .filter(_ contains keyword).take(maxResults).toList
+      log.info("Search for: [{}], resulted in [{}] results on [{}]", keyword, results.size, key)
+      sender() ! SearchResults(results)
   }
 
-  private def doIndex(char: Char): Unit =
+  private def doIndex(part: String): Unit =
     wikipediaCachedKeywordsSource
+      .filter(_.utf8String.toLowerCase(Locale.ROOT) contains part)
       .runWith(Sink.actorRef(self, onCompleteMessage = IndexingCompleted))
 
 }

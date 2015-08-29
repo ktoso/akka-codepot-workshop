@@ -1,50 +1,38 @@
 package akka.codepot.service
 
 import akka.actor.ActorSystem
+import akka.codepot.common.BaseApp
 import akka.codepot.engine.SearchEngineNotYetInitializedException
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.server.{ExceptionHandler, Route}
+import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
+object HttpServiceApp extends BaseApp {
 
-object HttpServiceApp extends App
-  with HelloWorldService
-  with SearchService {
+  override protected def run(_system: ActorSystem, opts: Map[String, String]): Unit =
+    new HelloWorldService with SearchService {
+      // infrastructure:
+      implicit def system = _system
+      implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  // infrastructure:
-  implicit val system = ActorSystem("search-system")
-  implicit val materializer = ActorMaterializer()
+      val config = system.settings.config
 
-  val config = system.settings.config
-
-  val myExceptionHandler = ExceptionHandler {
-    case SearchEngineNotYetInitializedException(msg) =>
-      complete(<html>
-        <body>{msg}</body>
-      </html>)
-  }
-
-
-  // our routes:
-  val route: Route = handleExceptions(myExceptionHandler) {
-    helloRoutes ~ searchRoutes
-  }
-
-  // start the http server:
-  val bindingFuture = Http().bindAndHandle(route, "127.0.0.1", config.getInt("codepot.http.port"))
+      val myExceptionHandler = ExceptionHandler {
+        case SearchEngineNotYetInitializedException(msg) =>
+          complete(<html>
+            <body>
+              {msg}
+            </body>
+          </html>)
+      }
 
 
-  // cleanup:
+      // our routes:
+      val route: Route = handleExceptions(myExceptionHandler) {
+        helloRoutes ~ searchRoutes
+      }
 
-  println("Server online at http://127.0.0.1:8080/")
-  println("Press RETURN to stop...")
-  io.StdIn.readLine()
-
-  // cleanly unbind and shut down the ActorSystem
-  bindingFuture
-    .flatMap(_.unbind())(system.dispatcher) // trigger unbinding from the port
-    .onComplete { _ ⇒ Await.ready(system.terminate(), 1.second) }
-
+      // start the http server:
+      val bindingFuture = Http().bindAndHandle(route, "127.0.0.1", config.getInt("codepot.http.port"))
+    }
 }
