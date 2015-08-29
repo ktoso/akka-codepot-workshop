@@ -1,13 +1,10 @@
 package akka.codepot.engine.search
 
-import java.util.Locale
-
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.cluster.sharding.ClusterSharding
 import akka.cluster.sharding.ShardRegion.{ExtractEntityId, ExtractShardId}
-import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
 import akka.codepot.engine.index.Indexing
 import akka.codepot.engine.search.tiered.TieredSearchProtocol._
-import akka.codepot.engine.search.tiered.top.ShardedSimpleFromFileTopActor
 import akka.stream.scaladsl.ImplicitMaterializer
 import akka.util.Timeout
 
@@ -22,27 +19,25 @@ class SearchMaster extends Actor with ImplicitMaterializer with ActorLogging
   with Indexing {
   implicit val timeout = Timeout(10.seconds)
 
-  val extractShardId: ExtractShardId = {
-    case x: Search => x.keyword.toLowerCase(Locale.ROOT).take(1)
-  }
+  val extractShardId: ExtractShardId = ???
+    // TODO shardId is more general... what could it be?
 
-  val extractEntityId: ExtractEntityId = {
-    case x: Search => (x.keyword.toLowerCase(Locale.ROOT).take(2), x)
-  }
+  val extractEntityId: ExtractEntityId = ???
+    // TODO entityId can be more specific... what could it be?
 
-  val workerShading = ClusterSharding(context.system)
-    .start(
-      typeName = "search",
-      entityProps = ShardedSimpleFromFileTopActor.props(),
-      settings = ClusterShardingSettings(context.system),
-      extractShardId = extractShardId,
-      extractEntityId = extractEntityId)
+  val workerShading: ActorRef = {
+    ClusterSharding(context.system)
+    ??? // TODO start cluster sharding
+    // TODO shard the ShardedSimpleFromFileTopActor actor
+  }
 
   override def receive: Receive = {
     case search: Search =>
       import akka.pattern.{ask, pipe}
       import context.dispatcher
 
+      // TODO, see this is now a simple ask
+      // TODO, ask's are equivalent to per-request actors "aggregators"
       (workerShading ? search).pipeTo(sender())
   }
 

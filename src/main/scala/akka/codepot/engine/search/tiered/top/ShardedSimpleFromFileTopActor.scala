@@ -23,7 +23,7 @@ class ShardedSimpleFromFileTopActor extends Actor with ActorLogging
 
   import TieredSearchProtocol._
 
-  val key = self.path.name
+  val key = self.path.name // TODO what changed here? We get the id from the path, why?
 
   var inMemIndex: immutable.Set[String] = Set.empty
 
