@@ -27,7 +27,7 @@ class SearchMaster extends Actor with ImplicitMaterializer with ActorLogging
   val workers = shards foreach { l =>
 //    context.actorOf(ToSlowDelegatingTopActor.props(l), s"$l")
 //    context.actorOf(TailChoppingDelegatingTopActor.props(l), s"$l")
-    context.actorOf(BestEffortDelegatingTopActor.props(l, 100.millis), s"$l")
+    context.actorOf(BestEffortDelegatingTopActor.props(l, 100.millis), s"$l") // TODO Best effort = stay within 100ms
   }
 
   override def receive: Receive = initializingWorkers(shards.size)

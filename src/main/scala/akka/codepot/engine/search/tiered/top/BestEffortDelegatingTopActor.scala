@@ -1,7 +1,6 @@
 package akka.codepot.engine.search.tiered.top
 
-import akka.actor.{ActorLogging, ReceiveTimeout, Actor, Props}
-import akka.codepot.engine.search.tiered.TieredSearchProtocol.{Results, SearchResults}
+import akka.actor._
 import akka.codepot.engine.search.tiered.middle.RandomlySlowMiddleActor
 
 import scala.concurrent.duration._
@@ -21,20 +20,13 @@ class BestEffortDelegatingTopActor(prefix: Char, sla: FiniteDuration) extends Ac
   override def receive: Receive = {
     case any =>
       val replyTo = sender()
-      val slaGuardian = context.actorOf(Props(new Actor with ActorLogging {
-        context.setReceiveTimeout(sla)
 
-        override def receive: Actor.Receive = {
-          case res: Results =>
-            replyTo ! res
-            context.stop(self)
+      // TODO implement per-request actor which "either finishes with success, or handles the timeout"
+      // TODO use it to reply here.
+      // TODO you can use setReceiveTimeout
+      // TODO   or the scheduler...
 
-          case ReceiveTimeout =>
-            log.info("[{}] Did not meet {} SLA, degrading service quality with empty results.", prefix, sla)
-            replyTo ! SearchResults(Nil)
-            context.stop(self)
-        }
-      }))
+      val slaGuardian: ActorRef = ???
       worker.tell(any, sender = slaGuardian)
   }
 }
