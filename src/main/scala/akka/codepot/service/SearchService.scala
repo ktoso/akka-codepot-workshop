@@ -31,9 +31,8 @@ trait SearchService extends Directives with ScalaXmlSupport
         parameters('q, 'n ? 100) { (q, max) =>
           complete {
             search(q, max).map { r =>
-              HttpResponse(entity =
-                Chunked.fromData(ContentTypes.`application/json`,
-                chunks = r.source.map(k => ByteString(s"""{ "keyword": "$k" }\n"""))))
+              // TODO use HttpResponse and entity = Chunked.fromData to response as a stream of json
+              ???
             }
           }
         }
