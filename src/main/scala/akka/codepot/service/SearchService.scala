@@ -13,8 +13,10 @@ import spray.json.DefaultJsonProtocol
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-trait SearchService extends Directives with ScalaXmlSupport
-  with SprayJsonSupport {
+trait SearchService extends Directives with ScalaXmlSupport {
+  // TODO create "SearchProtocol" trait
+  // TODO use SprayJsonSupport as well as DefaultProtocol
+
   implicit def system: ActorSystem
   implicit def dispatcher = system.dispatcher
   implicit def materializer: ActorMaterializer
@@ -24,14 +26,13 @@ trait SearchService extends Directives with ScalaXmlSupport
 
   lazy val searchMaster: ActorRef = system.actorOf(SearchMaster.props(), "searchMaster")
 
-  import DefaultJsonProtocol._
-  implicit val results = jsonFormat1(SearchResults)
+
 
   def searchRoutes =
     pathPrefix("search") {
       get {
         parameters('q, 'n ? 100) { (q, max) =>
-          complete { search(q, max) }
+          complete { search(q, max) } // TODO this should be made compile (by implicit marshaller)
         }
       } ~
       complete {
