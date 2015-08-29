@@ -7,7 +7,7 @@ import akka.cluster.sharding.ShardRegion.{ExtractEntityId, ExtractShardId}
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
 import akka.codepot.engine.index.Indexing
 import akka.codepot.engine.search.tiered.TieredSearchProtocol._
-import akka.codepot.engine.search.tiered.top.ShardedSimpleFromFileTopActor
+import akka.codepot.engine.search.tiered.top.ShardedPersistentFromFileTopActor
 import akka.stream.scaladsl.ImplicitMaterializer
 import akka.util.Timeout
 
@@ -33,7 +33,7 @@ class SearchMaster extends Actor with ImplicitMaterializer with ActorLogging
   val workerShading = ClusterSharding(context.system)
     .start(
       typeName = "search",
-      entityProps = ShardedSimpleFromFileTopActor.props(),
+      entityProps = ShardedPersistentFromFileTopActor.props(),
       settings = ClusterShardingSettings(context.system).withRememberEntities(true),
       extractShardId = extractShardId,
       extractEntityId = extractEntityId)
